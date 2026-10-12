@@ -19,12 +19,37 @@ load_dotenv(dotenv_path=_ENV_PATH, override=False)
 # ==============================================================================
 # Partner Configurable Environment Variables
 # ==============================================================================
-PROJECT_ID: str = os.environ.get("PROJECT_ID", "sekar-demo")
+def _resolve_project_id() -> str:
+  """Resolves active GCP Project ID from env, Cloud Shell, or gcloud config."""
+  for env_key in ("PROJECT_ID", "DEVSHELL_PROJECT_ID", "GOOGLE_CLOUD_PROJECT"):
+    val = (os.environ.get(env_key) or "").strip()
+    if val and val != "YOUR_GCP_PROJECT_ID":
+      return val
+  try:
+    out = subprocess.check_output(
+        ["gcloud", "config", "get-value", "project", "--quiet"],
+        text=True,
+        stderr=subprocess.DEVNULL,
+        timeout=5,
+    ).strip()
+    if out and out != "(unset)":
+      return out
+  except Exception:  # pylint: disable=broad-exception-caught
+    pass
+  return "sekar-demo"
+
+
+PROJECT_ID: str = _resolve_project_id()
 REGION: str = os.environ.get("REGION", "northamerica-northeast2")
-VERTEX_ENDPOINT_ID: str = (
+_RAW_ENDPOINT_ID: str = (
     os.environ.get("VERTEX_ENDPOINT_ID")
     or os.environ.get("VERTEX_L4_ENDPOINT_ID")
-    or "4858295481421266944"
+    or ""
+).strip()
+VERTEX_ENDPOINT_ID: str = (
+    _RAW_ENDPOINT_ID
+    if (_RAW_ENDPOINT_ID and _RAW_ENDPOINT_ID != "YOUR_VERTEX_ENDPOINT_ID")
+    else "4858295481421266944"
 )
 # Backwards-compatible alias
 VERTEX_L4_ENDPOINT_ID: str = VERTEX_ENDPOINT_ID
