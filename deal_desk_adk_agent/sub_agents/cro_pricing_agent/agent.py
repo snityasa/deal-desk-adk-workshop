@@ -15,9 +15,10 @@ except ImportError:
   from tools.pricing_tool import predict_deal_win_probability  # type: ignore
 
 _AGENT_KWARGS: dict[str, Any] = {}
-if "mode" in inspect.signature(Agent.__init__).parameters:
+if "mode" in getattr(Agent, "model_fields", {}) or "mode" in inspect.signature(Agent.__init__).parameters:
   # ADK 2.x: single_turn mode allows root_agent to invoke sub-agents as tools
-  # while preserving the visual sub_agents hierarchy in ADK Web UI
+  # and receive their results back in the same turn while preserving the
+  # visual sub_agents hierarchy in ADK Web UI
   _AGENT_KWARGS["mode"] = "single_turn"
 
 cro_pricing_agent = Agent(
