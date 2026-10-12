@@ -1,0 +1,31 @@
+{
+  "name": "deal_desk_adk_agent",
+  "description": "Autonomous B2B Deal Desk & Margin Optimizer (C-Level Executive Orchestrator combining Quantitative ML Pricing & CFO Policy Governance RAG)",
+  "url": "http://localhost:8081/a2a/deal_desk_adk_agent",
+  "version": "1.0.0",
+  "protocolVersion": "0.3.0",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "deal_desk_evaluation",
+      "name": "Deal Desk Evaluation & Margin Optimization",
+      "description": "Evaluates B2B enterprise deals combining quantitative Vertex AI win-probability modeling and qualitative CFO governance & SLA policy RAG.",
+      "tags": [
+        "deal-desk",
+        "pricing",
+        "cfo",
+        "cro",
+        "governance"
+      ]
+    }
+  ]
+}
