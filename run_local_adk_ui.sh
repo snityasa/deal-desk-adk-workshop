@@ -85,15 +85,19 @@ elif command -v python3 >/dev/null 2>&1 && check_python_deps "python3"; then
 elif [[ -x "${HOME}/.local/share/uv/tools/google-adk/bin/python" ]] && check_python_deps "${HOME}/.local/share/uv/tools/google-adk/bin/python"; then
   PYTHON_BIN="${HOME}/.local/share/uv/tools/google-adk/bin/python"
 else
-  # Option D: Automatically bootstrap a clean local .venv on the partner's laptop
-  echo "  [SETUP] Installing ADK & MCP dependencies into local .venv (${SCRIPT_DIR}/.venv)..."
+  # Option D: Automatically bootstrap or update local .venv without interactive prompts
+  echo "  [SETUP] Ensuring ADK & MCP dependencies are installed in ${SCRIPT_DIR}/.venv..."
   if command -v uv >/dev/null 2>&1; then
-    uv venv "${SCRIPT_DIR}/.venv"
+    if [[ ! -x "${SCRIPT_DIR}/.venv/bin/python" ]]; then
+      uv venv --allow-existing "${SCRIPT_DIR}/.venv"
+    fi
     uv pip install --default-index https://pypi.org/simple --python "${SCRIPT_DIR}/.venv/bin/python" -r "${AGENT_DIR}/requirements.txt"
   else
-    python3 -m venv "${SCRIPT_DIR}/.venv"
-    "${SCRIPT_DIR}/.venv/bin/pip" install --upgrade pip
-    "${SCRIPT_DIR}/.venv/bin/pip" install -r "${AGENT_DIR}/requirements.txt"
+    if [[ ! -x "${SCRIPT_DIR}/.venv/bin/python" ]]; then
+      python3 -m venv "${SCRIPT_DIR}/.venv"
+    fi
+    "${SCRIPT_DIR}/.venv/bin/pip" install --upgrade pip --quiet
+    "${SCRIPT_DIR}/.venv/bin/pip" install -r "${AGENT_DIR}/requirements.txt" --quiet
   fi
   PYTHON_BIN="${SCRIPT_DIR}/.venv/bin/python"
 fi
