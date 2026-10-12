@@ -21,6 +21,35 @@ if [[ -f "${ENV_FILE}" ]]; then
   set +a
 fi
 
+# 1b. Auto-detect active GCP Project & Vertex Endpoint in Cloud Shell if .env has placeholders
+if [[ -z "${PROJECT_ID:-}" || "${PROJECT_ID}" == "YOUR_GCP_PROJECT_ID" ]]; then
+  DETECTED_PROJ="${DEVSHELL_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || true)}"
+  if [[ -n "${DETECTED_PROJ}" && "${DETECTED_PROJ}" != "(unset)" ]]; then
+    export PROJECT_ID="${DETECTED_PROJ}"
+    export GOOGLE_CLOUD_PROJECT="${DETECTED_PROJ}"
+    if [[ -f "${ENV_FILE}" ]]; then
+      sed -i "s|PROJECT_ID=\"YOUR_GCP_PROJECT_ID\"|PROJECT_ID=\"${PROJECT_ID}\"|g" "${ENV_FILE}" 2>/dev/null || true
+      sed -i "s|GOOGLE_CLOUD_PROJECT=\"YOUR_GCP_PROJECT_ID\"|GOOGLE_CLOUD_PROJECT=\"${PROJECT_ID}\"|g" "${ENV_FILE}" 2>/dev/null || true
+    fi
+  fi
+fi
+
+if [[ -z "${VERTEX_ENDPOINT_ID:-}" || "${VERTEX_ENDPOINT_ID}" == "YOUR_VERTEX_ENDPOINT_ID" ]]; then
+  if command -v gcloud >/dev/null 2>&1 && [[ -n "${PROJECT_ID:-}" && "${PROJECT_ID}" != "YOUR_GCP_PROJECT_ID" ]]; then
+    LIVE_EP=$(gcloud ai endpoints list \
+      --project="${PROJECT_ID}" \
+      --region="${REGION:-northamerica-northeast2}" \
+      --filter="displayName=c-level-deal-desk-l4-endpoint" \
+      --format="value(name)" 2>/dev/null | head -n 1 | awk -F'/' '{print $NF}' || true)
+    if [[ -n "${LIVE_EP}" ]]; then
+      export VERTEX_ENDPOINT_ID="${LIVE_EP}"
+      if [[ -f "${ENV_FILE}" ]]; then
+        sed -i "s|VERTEX_ENDPOINT_ID=\"YOUR_VERTEX_ENDPOINT_ID\"|VERTEX_ENDPOINT_ID=\"${VERTEX_ENDPOINT_ID}\"|g" "${ENV_FILE}" 2>/dev/null || true
+      fi
+    fi
+  fi
+fi
+
 # 2. Select Port 8081 (or fallback to 8082 if 8081 is in use)
 PORT=$(python3 -c "
 import os, socket
