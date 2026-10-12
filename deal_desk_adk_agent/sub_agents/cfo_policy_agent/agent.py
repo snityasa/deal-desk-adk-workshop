@@ -15,9 +15,10 @@ except ImportError:
   from tools.policy_rag_tool import search_cfo_governance_policies  # type: ignore
 
 _AGENT_KWARGS: dict[str, Any] = {}
-if "mode" in inspect.signature(Agent.__init__).parameters:
+if "mode" in getattr(Agent, "model_fields", {}) or "mode" in inspect.signature(Agent.__init__).parameters:
   # ADK 2.x: single_turn mode allows root_agent to invoke sub-agents as tools
-  # while preserving the visual sub_agents hierarchy in ADK Web UI
+  # and receive their results back in the same turn while preserving the
+  # visual sub_agents hierarchy in ADK Web UI
   _AGENT_KWARGS["mode"] = "single_turn"
 
 cfo_policy_agent = Agent(
