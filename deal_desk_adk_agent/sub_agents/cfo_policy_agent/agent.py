@@ -29,19 +29,20 @@ cfo_policy_agent = Agent(
         "Vertex AI Search (`search_cfo_governance_policies`) over official CFO "
         "policy PDFs to audit compliance and required sign-offs."
     ),
-    instruction=f"""You are the Chief Financial Officer (CFO) Policy & SLA Governance Agent.
-Your job is to audit B2B deal proposals against our official corporate governance policies indexed in Vertex AI Search Engine (`{config.SEARCH_ENGINE_ID}` in `{config.SEARCH_LOCATION}`).
+    instruction="""You are the Chief Financial Officer (CFO) Policy & SLA Governance Auditor.
+Your job is to check B2B deal proposals against official corporate governance policies using the `search_cfo_governance_policies` tool.
 
 CRITICAL RULES:
 1. ALWAYS call `search_cfo_governance_policies` to retrieve official rules covering:
    - Discount approval thresholds (`Global_Discount_Approval_Matrix_2026.pdf`)
-   - Competitor displacement rules (`Competitor_Displacement_Playbook.pdf` — remember: NEVER use real company names, only `CloudCorp_Global`, `Apex_Systems`, `Local_Legacy`, or `None`)
+   - Competitor displacement rules (`Competitor_Displacement_Playbook.pdf` — NEVER use real company names, only `CloudCorp_Global`, `Apex_Systems`, `Local_Legacy`, or `None`)
    - Custom SLA eligibility & minimum SGD deal value thresholds (`Enterprise_SLA_Governance_Rules.pdf`)
-2. Provide a rigorous CFO Governance Assessment citing the specific policy documents:
-   - **Discount Governance Audit**: Is the proposed discount within auto-approval limits, or does it require VP Sales / CFO Committee escalation?
-   - **Competitor Displacement Eligibility**: Does the competitor (`CloudCorp_Global`, `Apex_Systems`, `Local_Legacy`, `None`) qualify for displacement buffer discounts?
-   - **Custom SLA Compliance**: If `custom_sla_requested=1`, verify whether `deal_value_sgd` meets the mandatory SGD 1,500,000 minimum threshold and whether the customer segment (`Enterprise` vs `Mid_Market`/`SMB`) is permitted to request custom SLAs.
-   - **Policy Citations**: Explicitly list the PDF document titles and page numbers retrieved from Vertex AI Search.
+2. NEVER mention infrastructure, search engine IDs, regions, or cloud deployment details.
+3. Return ONLY a brief, factual 4-bullet summary (1 short sentence per bullet, no intro/outro paragraphs):
+   - **Discount Rule**: Pass or escalation required, plus any combined SLA margin reserve rule (*Global_Discount_Approval_Matrix_2026.pdf*).
+   - **Competitor Rule**: Whether the competitor qualifies for displacement fast-track (*Competitor_Displacement_Playbook.pdf*).
+   - **SLA Rule**: Whether the segment and deal value meet Custom SLA thresholds (*Enterprise_SLA_Governance_Rules.pdf*).
+   - **Required Sign-Off**: Exact approver required (`Auto-Approve`, `VP of Sales`, or `CFO Deal Desk Committee`).
 """,
     tools=[search_cfo_governance_policies],
     **_AGENT_KWARGS,

@@ -46,7 +46,7 @@ Open `deal_desk_adk_agent/.env` and set:
 Open `deal_desk_adk_agent/agent.py` and complete the 3 guided markers:
 - **`[WORKSHOP MCP STEP 1/3]`** *(Lines 20–22)*: Import `McpToolset` and `SseConnectionParams` from `google.adk.tools.mcp_tool`.
 - **`[WORKSHOP MCP STEP 2/3]`** *(Lines 39–47)*: Instantiate `McpToolset` pointing to `MCP_SERVER_URL`.
-- **`[WORKSHOP MCP STEP 3/3]`** *(Lines 108–109)*: Attach `tools=_root_tools` to `root_agent`.
+- **`[WORKSHOP MCP STEP 3/3]`** *(Lines 114–115)*: Attach `tools=[deal_desk_db_mcp]` to `root_agent`.
 
 ### 3. Run & Test the ADK Web UI
 From the repository root, run:
@@ -54,3 +54,18 @@ From the repository root, run:
 bash run_local_adk_ui.sh
 ```
 Then open **Web Preview** in Cloud Shell on port `8081` (or `http://localhost:8081` if running locally).
+
+### 4. Inspect Telemetry in Google Cloud Logging (`Logs Explorer`)
+Every agent turn, Vertex AI Online Prediction call, Vertex AI Search RAG query, and Cloud Run MCP tool execution emits structured telemetry to **Google Cloud Logging** so you can verify whether live services or fallbacks were used:
+- **All Deal Desk Telemetry**:
+  ```text
+  logName:"deal-desk-agent-telemetry"
+  ```
+- **Only Fallback Warnings (Auth / Endpoint / RAG issues)**:
+  ```text
+  logName:"deal-desk-agent-telemetry" AND severity=WARNING
+  ```
+- **Verify Live Vertex AI Endpoint & Vertex AI Search RAG Hits**:
+  ```text
+  logName:"deal-desk-agent-telemetry" AND (jsonPayload.event_type="VERTEX_AI_PREDICTION" OR jsonPayload.event_type="VERTEX_AI_SEARCH_RAG")
+  ```
