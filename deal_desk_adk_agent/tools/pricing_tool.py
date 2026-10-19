@@ -8,6 +8,7 @@ endpoint in `northamerica-northeast2`.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 import requests
 
@@ -44,6 +45,8 @@ def predict_deal_win_probability(
       `predicted_outcome`, `recommended_max_discount_pct`, `margin_policy`)
       along with endpoint metadata.
   """
+  start_ts = time.perf_counter()
+
   # Normalize and sanitize inputs
   clean_segment = str(customer_segment).strip()
   if clean_segment not in ("Enterprise", "Mid_Market", "SMB"):
@@ -71,6 +74,9 @@ def predict_deal_win_probability(
       f"endpoints/{config.VERTEX_ENDPOINT_ID}:predict"
   )
 
+  fallback_reason = "no_gcp_access_token"
+  http_status_code: int | None = None
+
   token = config.get_gcp_access_token()
   if token:
     try:
@@ -85,12 +91,14 @@ def predict_deal_win_probability(
           json={"instances": [instance_payload]},
           timeout=15,
       )
+      http_status_code = resp.status_code
+      latency_ms = round((time.perf_counter() - start_ts) * 1000.0, 2)
       if resp.status_code == 200:
         data = resp.json()
         predictions = data.get("predictions", [])
         raw_pred = predictions[0] if predictions else {}
         if isinstance(raw_pred, dict):
-          # Strip any internal hardware/accelerator telemetry fields from display
+          # Strip any internal hardware/accelerator telemetry fields from LLM display
           pred = {
               k: v
               for k, v in raw_pred.items()
@@ -98,22 +106,43 @@ def predict_deal_win_probability(
           }
         else:
           pred = raw_pred
+
+        config.log_telemetry(
+            component="cro_pricing_tool",
+            event_type="VERTEX_AI_PREDICTION",
+            message=(
+                f"Live Vertex AI Endpoint ({config.VERTEX_ENDPOINT_ID}) hit succeeded "
+                f"in {latency_ms}ms | win_prob={pred.get('win_probability') if isinstance(pred, dict) else pred} "
+                f"policy={pred.get('margin_policy') if isinstance(pred, dict) else 'N/A'}"
+            ),
+            severity="INFO",
+            execution_mode="LIVE_VERTEX_AI_ENDPOINT",
+            details={
+                "endpoint_id": config.VERTEX_ENDPOINT_ID,
+                "endpoint_url": endpoint_url,
+                "http_status_code": http_status_code,
+                "latency_ms": latency_ms,
+                "fallback_used": False,
+                "input_instance": instance_payload,
+                "prediction_output": pred,
+                "raw_endpoint_response": raw_pred,
+                "deployed_model_id": data.get("deployedModelId", ""),
+            },
+        )
         return {
             "status": "success",
-            "execution_mode": "LIVE_VERTEX_AI_ENDPOINT",
-            "project_id": config.PROJECT_ID,
-            "region": config.REGION,
-            "endpoint_id": config.VERTEX_ENDPOINT_ID,
             "input_instance": instance_payload,
             "prediction": pred,
         }
       else:
+        fallback_reason = f"http_{resp.status_code}: {resp.text[:240]}"
         logger.warning(
             "Vertex AI Endpoint returned HTTP %s: %s",
             resp.status_code,
             resp.text,
         )
     except Exception as exc:
+      fallback_reason = f"exception: {exc}"
       logger.warning("Vertex AI Endpoint request exception: %s", exc)
 
   # Deterministic fallback matching the trained model physics if offline/unauthenticated
@@ -155,17 +184,36 @@ def predict_deal_win_probability(
   else:
     margin_policy = "CFO_COMMITTEE_ESCALATION"
 
+  fallback_pred = {
+      "win_probability": win_prob,
+      "predicted_outcome": "Won" if win_prob >= 0.55 else "Lost",
+      "recommended_max_discount_pct": recommended_max_discount,
+      "margin_policy": margin_policy,
+  }
+  latency_ms = round((time.perf_counter() - start_ts) * 1000.0, 2)
+  config.log_telemetry(
+      component="cro_pricing_tool",
+      event_type="VERTEX_AI_PREDICTION",
+      message=(
+          f"FALLBACK_SIMULATION used for Vertex AI Endpoint ({config.VERTEX_ENDPOINT_ID}) "
+          f"after {latency_ms}ms | reason={fallback_reason} | win_prob={win_prob}"
+      ),
+      severity="WARNING",
+      execution_mode="FALLBACK_SIMULATION",
+      details={
+          "endpoint_id": config.VERTEX_ENDPOINT_ID,
+          "endpoint_url": endpoint_url,
+          "http_status_code": http_status_code,
+          "latency_ms": latency_ms,
+          "fallback_used": True,
+          "fallback_reason": fallback_reason,
+          "input_instance": instance_payload,
+          "prediction_output": fallback_pred,
+      },
+  )
+
   return {
       "status": "success",
-      "execution_mode": "FALLBACK_SIMULATION (Live endpoint unreachable or local auth expired)",
-      "project_id": config.PROJECT_ID,
-      "region": config.REGION,
-      "endpoint_id": config.VERTEX_ENDPOINT_ID,
       "input_instance": instance_payload,
-      "prediction": {
-          "win_probability": win_prob,
-          "predicted_outcome": "Won" if win_prob >= 0.55 else "Lost",
-          "recommended_max_discount_pct": recommended_max_discount,
-          "margin_policy": margin_policy,
-      },
+      "prediction": fallback_pred,
   }

@@ -127,6 +127,32 @@ def insert_deal_decision_to_db(
       "MCP Tool [insert_deal_decision_to_db] committed record: %s",
       json.dumps(receipt),
   )
+  # Emit structured Cloud Logging jsonPayload for Logs Explorer filter
+  print(
+      json.dumps({
+          "severity": "INFO",
+          "message": (
+              f"[DEAL_DESK_TELEMETRY] [deal_desk_mcp_server] [MCP_DB_INSERT] "
+              f"(LIVE_CLOUD_RUN_MCP) Ticket {deal_approval_ticket_id} ({transaction_id}) "
+              f"committed for {customer_segment} SGD {deal_value_sgd:,.2f} -> {decision_status}"
+          ),
+          "timestamp_utc": committed_at_utc,
+          "log_source": "deal-desk-agent-telemetry",
+          "component": "deal_desk_mcp_server",
+          "event_type": "MCP_DB_INSERT",
+          "execution_mode": "LIVE_CLOUD_RUN_MCP",
+          "deal_approval_ticket_id": deal_approval_ticket_id,
+          "transaction_id": transaction_id,
+          "record_summary": record_summary,
+          "logging.googleapis.com/labels": {
+              "app": "deal-desk-adk-agent",
+              "component": "deal_desk_mcp_server",
+              "event_type": "MCP_DB_INSERT",
+              "execution_mode": "LIVE_CLOUD_RUN_MCP",
+          },
+      }),
+      flush=True,
+  )
   return receipt
 
 
