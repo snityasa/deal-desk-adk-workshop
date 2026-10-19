@@ -39,7 +39,7 @@ if [[ -z "${VERTEX_ENDPOINT_ID:-}" || "${VERTEX_ENDPOINT_ID}" == "YOUR_VERTEX_EN
     LIVE_EP=$(gcloud ai endpoints list \
       --project="${PROJECT_ID}" \
       --region="${REGION:-northamerica-northeast2}" \
-      --filter="displayName=c-level-deal-desk-l4-endpoint" \
+      --filter="displayName=c-level-deal-desk-endpoint" \
       --format="value(name)" 2>/dev/null | head -n 1 | awk -F'/' '{print $NF}' || true)
     if [[ -n "${LIVE_EP}" ]]; then
       export VERTEX_ENDPOINT_ID="${LIVE_EP}"
