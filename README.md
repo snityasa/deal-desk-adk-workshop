@@ -120,10 +120,10 @@ Click the **Web Preview** icon in Google Cloud Shell, select **Change port** -> 
 Now upgrade the Root Orchestrator so it can automatically record locked deal decisions and mint official `DD-2026-XXXXX` tickets via the remote **Cloud Run MCP Server** (`deal-desk-mcp-server`).
 
 ### Step 1: Add Your Cloud Run MCP URL to `deal_desk_adk_agent/.env`
-1. In the Google Cloud Console, go to **Cloud Run** and copy the URL of the **`deal-desk-mcp-server`** service (e.g., `https://deal-desk-mcp-server-xxxxxx.northamerica-northeast2.run.app`).
+1. In the Google Cloud Console, go to **Cloud Run** and copy the URL of the **`deal-desk-mcp-server`** service (e.g., `https://deal-desk-mcp-server-xxxxxx.a.run.app`).
 2. Open `deal_desk_adk_agent/.env` and set `MCP_SERVER_URL`:
    ```env
-   MCP_SERVER_URL="https://deal-desk-mcp-server-xxxxxx.northamerica-northeast2.run.app/sse"
+   MCP_SERVER_URL="https://deal-desk-mcp-server-xxxxxx.a.run.app/sse"
    ```
    *(Note: `config.py` automatically appends `/sse` if you paste the base URL.)*
 

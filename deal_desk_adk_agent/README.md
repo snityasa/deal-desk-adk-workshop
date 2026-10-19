@@ -16,7 +16,7 @@ The **Autonomous B2B Deal Desk & Margin Optimizer** evaluates enterprise softwar
      - **Option 1 (`Fast-Track Restructuring`)**: Reply `"1"` to re-evaluate the deal with modified terms (e.g., removing a Custom SLA or lowering the discount) to qualify for faster/auto-approval.
      - **Option 2 (`Proceed As-Is`)**: Reply `"2"` to lock the deal parameters and route for approval (creating an official `DD-2026-XXXXX` ticket when the Cloud Run MCP server is connected, or instructing manual portal submission prior to connecting MCP).
 2. **Sub-Agent A — CRO Pricing Agent (`cro_pricing_agent` in [`sub_agents/cro_pricing_agent/agent.py`](./sub_agents/cro_pricing_agent/agent.py))**:
-   - Calls [`predict_deal_win_probability`](./tools/pricing_tool.py) against the live **Vertex AI Online Prediction Endpoint** (`northamerica-northeast2`) to calculate predicted win probability (`%`), outcome (`Won`/`Lost`), and recommended maximum discount ceiling.
+   - Calls [`predict_deal_win_probability`](./tools/pricing_tool.py) against the live **Vertex AI Online Prediction Endpoint** to calculate predicted win probability (`%`), outcome (`Won`/`Lost`), and recommended maximum discount ceiling.
 3. **Sub-Agent B — CFO Policy Agent (`cfo_policy_agent` in [`sub_agents/cfo_policy_agent/agent.py`](./sub_agents/cfo_policy_agent/agent.py))**:
    - Calls [`search_cfo_governance_policies`](./tools/policy_rag_tool.py) against **Vertex AI Search (Discovery Engine RAG)** over indexed CFO governance PDFs (`Global_Discount_Approval_Matrix_2026.pdf`, `Competitor_Displacement_Playbook.pdf`, `Enterprise_SLA_Governance_Rules.pdf`).
 4. **Remote MCP Toolset (`deal_desk_db_mcp` in [`agent.py`](./agent.py))**:
